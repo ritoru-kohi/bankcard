@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Банковская карта</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            margin: 0;
+            padding: 30px;
+        }
+        .wrap {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border: 1px solid #aaa;
+        }
+        .top {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        form {
+            flex: 2;
+            min-width: 260px;
+        }
+        .card {
+            flex: 1;
+            min-width: 260px;
+            background: #1e2f3f;
+            color: white;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 3px;
+        }
+        input, select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #888;
+        }
+        .two {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .two div {
+            flex: 1;
+        }
+        button {
+            margin-top: 12px;
+            padding: 6px 12px;
+            border: 1px solid #888;
+            background: #ddd;
+            cursor: pointer;
+        }
+        .btns {
+            display: flex; gap: 10px;
+        }
+        .cnum {
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 20px 0;
+            letter-spacing: 1px;
+        }
+        .card div {
+            display: flex;
+            justify-content: space-between;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background: #ddd;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="top">
+        <form id="cardForm">
+            <label>Название банка</label>
+            <input type="text" id="bankName" name="bankName" placeholder="Сбер">
+
+            <label>Платежная система</label>
+            <select id="paySystem" name="paySystem">
+                <option value="">-- Выберите --</option>
+                <option value="Visa">Visa</option>
+                <option value="Mastercard">Mastercard</option>
+                <option value="Мир">Мир</option>
+            </select>
+
+            <label>Номер карты (16 цифр)</label>
+            <input type="text" id="cardNumber" name="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
+
+            <label>Имя держателя</label>
+            <input type="text" id="cardHolder" name="cardHolder" placeholder="VERONIKA">
+
+            <div class="two">
+                <div><label>Месяц</label><input type="text" id="expMonth" name="expMonth" placeholder="03" maxlength="2"></div>
+                <div><label>Год</label><input type="text" id="expYear" name="expYear" placeholder="23" maxlength="2"></div>
+            </div>
+
+            <div class="btns">
+                <button type="submit">Добавить карту</button>
+                <button type="button" id="clearBtn">Очистить</button>
+            </div>
+            <div id="errorMsg" class="error"></div>
+        </form>
+
+        <div class="card">
+            <div><b id="previewBank">БАНК</b> <span id="previewPay">СИСТЕМА</span></div>
+            <div class="cnum" id="previewNumber">•••• •••• •••• ••••</div>
+            <div><span id="previewHolder">ИМЯ</span> <span id="previewExpiry">ММ/ГГ</span></div>
+        </div>
+    </div>
+
+    <h3>Список карт</h3>
+    <table id="cardsTable" style="width: 100%;">
+        <thead>
+            <tr><th>Банк</th><th>Система</th><th>Номер</th><th>Держатель</th><th>Срок</th></tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Сюда будут добавляться карты -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const form = document.getElementById('cardForm');
+    const tableBody = document.getElementById('tableBody');
+    const errorDiv = document.getElementById('errorMsg');
+    const previewBank = document.getElementById('previewBank');
+    const previewPay = document.getElementById('previewPay');
+    const previewNumber = document.getElementById('previewNumber');
+    const previewHolder = document.getElementById('previewHolder');
+    const previewExpiry = document.getElementById('previewExpiry');
+
+    function getFormData() {
+        return {
+            bankName: document.querySelector('[name="bankName"]').value.trim(),
+            paySystem: document.querySelector('[name="paySystem"]').value,
+            cardNumber: document.querySelector('[name="cardNumber"]').value.replace(/\D/g, ''),
+            cardHolder: document.querySelector('[name="cardHolder"]').value.trim().toUpperCase(),
+            expMonth: document.querySelector('[name="expMonth"]').value.trim(),
+            expYear: document.querySelector('[name="expYear"]').value.trim()
+        };
+    }
+
+    function updatePreview() {
+        const data = getFormData();
+        previewBank.textContent = data.bankName || 'БАНК';
+        previewPay.textContent = data.paySystem || 'СИСТЕМА';
+        
+        let digits = data.cardNumber;
+        if (digits.length === 0) {
+            previewNumber.textContent = '•••• •••• •••• ••••';
+        } else {
+            let groups = [];
+            for (let i = 0; i < digits.length; i += 4) {
+                groups.push(digits.slice(i, i + 4));
+            }
+            previewNumber.textContent = groups.join(' ');
+        }
+        
+        previewHolder.textContent = data.cardHolder || 'ИМЯ';
+        
+        if (data.expMonth && data.expYear) {
+            previewExpiry.textContent = data.expMonth + '/' + data.expYear;
+        } else {
+            previewExpiry.textContent = 'ММ/ГГ';
+        }
+    }
+
+    function resetForm() {
+        form.reset();
+        updatePreview();
+        errorDiv.textContent = '';
+    }
+
+    function addCardToTable() {
+        const data = getFormData();
+        
+        if (!data.bankName) {
+            errorDiv.textContent = 'Введите название банка';
+            return;
+        }
+        if (!data.paySystem) {
+            errorDiv.textContent = 'Выберите платежную систему';
+            return;
+        }
+        if (data.cardNumber.length !== 16) {
+            errorDiv.textContent = 'Номер карты должен содержать ровно 16 цифр (сейчас ' + data.cardNumber.length + ')';
+            return;
+        }
+        if (!data.cardHolder) {
+            errorDiv.textContent = 'Введите имя держателя карты';
+            return;
+        }
+        if (data.expMonth.length !== 2 || data.expYear.length !== 2) {
+            errorDiv.textContent = 'Введите месяц и год в формате MM и ГГ';
+            return;
+        }
+        let monthNum = parseInt(data.expMonth, 10);
+        if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+            errorDiv.textContent = 'Месяц должен быть от 01 до 12';
+            return;
+        }
+        
+        let formattedNumber = '';
+        for (let i = 0; i < data.cardNumber.length; i += 4) {
+            formattedNumber += data.cardNumber.slice(i, i + 4) + ' ';
+        }
+        formattedNumber = formattedNumber.trim();
+        
+        let html = `<tr>
+            <td>${data.bankName}</td>
+            <td>${data.paySystem}</td>
+            <td>${formattedNumber}</td>
+            <td>${data.cardHolder}</td>
+            <td>${data.expMonth}/${data.expYear}</td>
+        </tr>`;
+        
+        tableBody.innerHTML += html;
+        
+        resetForm();
+        errorDiv.textContent = '✓ Карта добавлена!';
+        setTimeout(() => { errorDiv.textContent = ''; }, 2000);
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addCardToTable();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', resetForm);
+
+    const inputs = ['bankName', 'paySystem', 'cardNumber', 'cardHolder', 'expMonth', 'expYear'];
+    inputs.forEach(name => {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (el) {
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        }
+    });
+    
+    const cardNumberInput = document.querySelector('[name="cardNumber"]');
+    cardNumberInput.addEventListener('input', function() {
+        let digits = this.value.replace(/\D/g, '').slice(0, 16);
+        let formatted = '';
+        for (let i = 0; i < digits.length; i++) {
+            if (i > 0 && i % 4 === 0) formatted += ' ';
+            formatted += digits[i];
+        }
+        this.value = formatted;
+        updatePreview();
+    });
+    
+    document.querySelector('[name="expMonth"]').addEventListener('input', function() {
+        let val = this.value.replace(/\D/g, '').slice(0, 2);
+        if (val.length === 2) {
+            let num = parseInt(val, 10);
+            if (num < 1) val = '01';
+            if (num > 12) val = '12';
+        }
+        this.value = val;
+        updatePreview();
+    });
+    
+    document.querySelector('[name="expYear"]').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 2);
+        updatePreview();
+    });
+    
+    updatePreview();
+</script>
+</body>
+</html>
